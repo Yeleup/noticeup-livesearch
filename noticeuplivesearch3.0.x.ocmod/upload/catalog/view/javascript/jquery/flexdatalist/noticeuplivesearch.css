@@ -1,0 +1,21 @@
+.item{
+  font-size: 16px;
+  line-height: 20px;
+}
+.item.item-oldprice {
+  padding-left: 5px;
+  display: inline-block;
+  font-size: 80%;
+  color: rgba(0, 0, 0, 0.50);
+  text-decoration:line-through
+}
+.item.item-price {
+  padding-left: 10px;
+  display: inline-block;
+  font-size: 80%;
+  color: rgba(0, 0, 0, 0.80);
+}
+.item.item-name{
+  padding-left: 10px
+}
+.item.item-image{}

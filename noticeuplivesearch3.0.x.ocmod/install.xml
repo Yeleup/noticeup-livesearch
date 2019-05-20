@@ -1,0 +1,183 @@
+<modification>
+    <name>Noticeup Livesearch</name>
+	<version>3.x</version>
+	<link>mailto:magzhan9292@gmail.com?subject=Ask me about the Noticeuplivesearch</link>
+	<author>magzhan9292</author>
+	<code>noticeup_livesearch_ocmod_1</code>
+  <file path="catalog/controller/common/header.php">
+    <operation>
+      <search ><![CDATA[$this->load->view('common/header', $data);]]></search>
+      <add position="before"><![CDATA[
+        //Noticeup LIVESEARCH
+    		$this->load->model('setting/setting');
+
+    		if (!empty($this->config->get('noticeuplivesearch_minLength'))) {
+    			$data['noticeuplivesearch_minLength'] = $this->config->get('noticeuplivesearch_minLength');
+    		} else {
+    			$data['noticeuplivesearch_minLength'] = 0;
+    		}
+
+    		if (!empty($this->config->get('noticeuplivesearch_maxShownResults'))) {
+    			$data['noticeuplivesearch_maxShownResults'] = $this->config->get('noticeuplivesearch_maxShownResults');
+    		} else {
+    			$data['noticeuplivesearch_maxShownResults'] = 5;
+    		}
+
+    		if (!empty($this->config->get('noticeuplivesearch_visibleProperties'))) {
+    			$explode = explode(',',$this->config->get('noticeuplivesearch_visibleProperties'));
+    			$data['noticeuplivesearch_visibleProperties'] = json_encode($explode);
+    		} else{
+    			$data['noticeuplivesearch_visibleProperties'] = '["image","name","price","oldprice"]';
+    		}
+
+    		if (!empty($this->config->get('noticeuplivesearch_groupBy'))) {
+    			$data['noticeuplivesearch_groupBy'] = $this->config->get('noticeuplivesearch_groupBy');
+    		} else {
+    			$data['noticeuplivesearch_groupBy'] = 'null';
+    		}
+
+        $data['no_results'] = $this->language->get('text_no_results');
+
+			]]></add>
+    </operation>
+  </file>
+	<file path="catalog/view/theme/*/template/common/header.twig">
+		<operation>
+			<search ><![CDATA[</head>]]></search>
+			<add position="before"><![CDATA[
+<!--Noticeup Livesearch Flexdatalist path-->
+<link href="catalog/view/javascript/jquery/flexdatalist/jquery.flexdatalist.min.css" rel="stylesheet">
+<link href="catalog/view/javascript/jquery/flexdatalist/noticeuplivesearch.css" rel="stylesheet">
+<script src="catalog/view/javascript/jquery/flexdatalist/jquery.flexdatalist.min.js" type="text/javascript"></script>
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[</header>]]></search>
+			<add position="before"><![CDATA[
+			<!--Noticeup Livesearch-->
+			<script>
+			$("#search input[name='search']").flexdatalist({
+				minLength: {{ noticeuplivesearch_minLength }},
+				iconProperty: 'image',
+				visibleProperties: {{ noticeuplivesearch_visibleProperties }},
+				textProperty: 'name',
+				searchDisabled: true,
+        noResultsText: '{{ no_results }}',
+				{% if noticeuplivesearch_groupBy is not empty and  noticeuplivesearch_groupBy != 'null' %}
+				groupBy: '{{ noticeuplivesearch_groupBy }}',
+				{% endif %}
+				url: 'index.php?route=product/search/livesearch'
+			});
+
+			$("#search input[name='search']").on('select:flexdatalist', function(event, set, options) {
+				window.location.href = htmlUnescape(set.href);
+			});
+
+			function htmlUnescape(str){
+			  return str
+				  .replace(/&quot;/g, '"')
+				  .replace(/&#39;/g, "'")
+				  .replace(/&lt;/g, '<')
+				  .replace(/&gt;/g, '>')
+				  .replace(/&amp;/g, '&');
+			}
+			</script>
+		]]></add>
+		</operation>
+	</file>
+	<file path="catalog/controller/product/search.php">
+		<operation>
+			<search ><![CDATA[$this->response->setOutput($this->load->view('product/search', $data));]]></search>
+			<add position="replace" offset="1"><![CDATA[
+		$this->response->setOutput($this->load->view('product/search', $data));
+		}
+
+		function getProducts($data = array()){
+			$this->load->model('catalog/product');
+			$this->load->model('tool/image');
+			$this->load->model('setting/setting');
+
+			$prices = 0;
+			$model = 0;
+			$manufacturer = 0;
+			$images = 0;
+
+			if(!empty($this->config->get('noticeuplivesearch_groupBy')) ){
+				$manufacturer = 1;
+			}
+
+			$properties = explode(',',$this->config->get('noticeuplivesearch_visibleProperties'));
+			foreach ($properties as $property) {
+				# code...
+					if($property == 'image'){
+						$images = 1;
+					}elseif($property == 'price'){
+						$prices = 1;
+					}elseif($property == 'manufacturer'){
+						$manufacturer = 1;
+					}elseif($property == 'model'){
+						$model = 1;
+					}
+			}
+
+			$image_width = ( $this->config->get('noticeuplivesearch_image_width') ) ? $this->config->get('noticeuplivesearch_image_width') : 54;
+			$image_height = ( $this->config->get('noticeuplivesearch_image_width') ) ? $this->config->get('noticeuplivesearch_image_width') : 50;
+
+			$products = $this->model_catalog_product->getProducts($data);
+			$i = 0;
+			$results = array();
+			foreach ($products as $product) {
+
+				$results[$i]["name"] = $product["name"];
+
+				if ($model) {
+					$results["$i"]["model"] = $product["model"];
+				}
+
+				$results[$i]["image"] = $product['image'];
+				if ($product['image'] && $images==1) {
+					$results[$i]["image"] = $this->model_tool_image->resize(
+						$product['image'],
+						$image_width,
+						$image_height
+					);
+				}
+
+				if($manufacturer){
+					$results[$i]["manufacturer"] = $product['manufacturer'];
+				}
+
+				if ($prices) {
+					$results[$i]["price"] = $this->currency->format( $this->tax->calculate( $product['price'], $product['tax_class_id'], $this->config->get('config_tax') ), $this->session->data['currency'] );
+					if ($product['special']) {
+						$results[$i]["oldprice"] = $this->currency->format( $this->tax->calculate( $product['price'], $product['tax_class_id'], $this->config->get('config_tax') ), $this->session->data['currency'] );
+						$results[$i]["price"] = $this->currency->format( $this->tax->calculate( $product['special'], $product['tax_class_id'], $this->config->get('config_tax') ), $this->session->data['currency'] );
+					}
+				}
+
+				$results[$i]["href"] = $this->url->link('product/product', 'product_id=' . $product['product_id']);
+				$i++;
+			}
+			return $results;
+		}
+
+		function livesearch() {
+			$this->load->model('setting/setting');
+			$limit = ( $this->config->get('noticeuplivesearch_maxShownResults') ) ? $this->config->get('noticeuplivesearch_maxShownResults') : 20;
+			$search = $this->request->get['keyword'];
+
+
+			$data = array(
+				'filter_name' => $search,
+				'sort' => 'p.quantity',
+				'order'=> 'DESC',
+				'start'=> 0,
+				'limit'=> $limit
+			);
+
+			$results = $this->getProducts($data);
+			echo json_encode($results);
+		}]]></add>
+		</operation>
+	</file>
+</modification>

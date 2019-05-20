@@ -1,0 +1,241 @@
+<modification>
+    <name>Noticeup Livesearch</name>
+	<version>2.1</version>
+	<link>mailto:magzhan9292@gmail.com?subject=Ask me about the Noticeuplivesearch</link>
+	<author>magzhan9292</author>
+	<code>noticeup_livesearch_ocmod_1</code>
+  <file path="catalog/controller/common/header.php">
+    <operation>
+      <search ><![CDATA[if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/common/header.tpl')) {]]></search>
+      <add position="before"><![CDATA[
+        //Noticeup LIVESEARCH
+    		$this->load->model('setting/setting');
+
+    		if (!empty($this->config->get('noticeuplivesearch_minLength'))) {
+    			$data['noticeuplivesearch_minLength'] = $this->config->get('noticeuplivesearch_minLength');
+    		} else {
+    			$data['noticeuplivesearch_minLength'] = 0;
+    		}
+
+    		if (!empty($this->config->get('noticeuplivesearch_maxShownResults'))) {
+    			$data['noticeuplivesearch_maxShownResults'] = $this->config->get('noticeuplivesearch_maxShownResults');
+    		} else {
+    			$data['noticeuplivesearch_maxShownResults'] = 5;
+    		}
+
+    		if (!empty($this->config->get('noticeuplivesearch_visibleProperties'))) {
+    			$explode = explode(',',$this->config->get('noticeuplivesearch_visibleProperties'));
+    			$data['noticeuplivesearch_visibleProperties'] = json_encode($explode);
+    		} else{
+    			$data['noticeuplivesearch_visibleProperties'] = '["image","name","price","oldprice"]';
+    		}
+
+    		if (!empty($this->config->get('noticeuplivesearch_groupBy'))) {
+    			$data['noticeuplivesearch_groupBy'] = $this->config->get('noticeuplivesearch_groupBy');
+    		} else {
+    			$data['noticeuplivesearch_groupBy'] = 'null';
+    		}
+
+        $data['no_results'] = $this->language->get('text_no_results');
+        $data['text_search'] = $this->language->get('text_search');
+
+			]]></add>
+    </operation>
+  </file>
+	<file path="catalog/view/theme/*/template/common/header.tpl">
+		<operation>
+			<search ><![CDATA[</head>]]></search>
+			<add position="before"><![CDATA[
+<!--Noticeup Livesearch Flexdatalist path-->
+<link href="catalog/view/javascript/jquery/flexdatalist/jquery.flexdatalist.min.css" rel="stylesheet">
+<link href="catalog/view/javascript/jquery/flexdatalist/noticeuplivesearch.css" rel="stylesheet">
+<script src="catalog/view/javascript/jquery/flexdatalist/jquery.flexdatalist.min.js" type="text/javascript"></script>
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[</header>]]></search>
+			<add position="before"><![CDATA[
+			<!--Noticeup Livesearch-->
+			<script>
+			$("#search input[name='search']").flexdatalist({
+				minLength: <?=$noticeuplivesearch_minLength?>,
+				iconProperty: 'image',
+				visibleProperties: <?=$noticeuplivesearch_visibleProperties?>,
+				textProperty: 'name',
+				searchDisabled: true,
+        noResultsText: '<?=$no_results?>',
+				<?php if(!empty($noticeuplivesearch_groupBy) && $noticeuplivesearch_groupBy != 'null'){echo "groupBy: '".$noticeuplivesearch_groupBy."', ";}?>
+				url: 'index.php?route=product/search/livesearch'
+			});
+
+			$("#search input[name='search']").on('select:flexdatalist', function(event, set, options) {
+				window.location.href = htmlUnescape(set.href);
+			});
+
+			function htmlUnescape(str){
+			  return str
+				  .replace(/&quot;/g, '"')
+				  .replace(/&#39;/g, "'")
+				  .replace(/&lt;/g, '<')
+				  .replace(/&gt;/g, '>')
+				  .replace(/&amp;/g, '&');
+			}
+
+      $('input[name=flexdatalist-search]').attr( 'placeholder', '<?php echo $text_search; ?>');
+			$("input[name='flexdatalist-search']").change(function(){console.log($("input[name='search']").val());});
+			</script>
+		]]></add>
+		</operation>
+	</file>
+	<file path="catalog/controller/product/search.php">
+		<operation>
+			<search ><![CDATA[$this->response->setOutput($this->load->view('default/template/product/search.tpl', $data));]]></search>
+			<add position="replace" offset="2"><![CDATA[
+                $this->response->setOutput($this->load->view('default/template/product/search.tpl', $data));
+            }
+        }
+
+        function getProducts($data = array()){
+    			$this->load->model('catalog/product');
+    			$this->load->model('tool/image');
+    			$this->load->model('setting/setting');
+
+    			$prices = 0;
+    			$model = 0;
+    			$manufacturer = 0;
+    			$images = 0;
+
+    			if(!empty($this->config->get('noticeuplivesearch_groupBy')) ){
+    				$manufacturer = 1;
+    			}
+
+    			$properties = explode(',',$this->config->get('noticeuplivesearch_visibleProperties'));
+    			foreach ($properties as $property) {
+    				# code...
+    					if($property == 'image'){
+    						$images = 1;
+    					}elseif($property == 'price'){
+    						$prices = 1;
+    					}elseif($property == 'manufacturer'){
+    						$manufacturer = 1;
+    					}elseif($property == 'model'){
+    						$model = 1;
+    					}
+    			}
+
+    			$image_width = ( $this->config->get('noticeuplivesearch_image_width') ) ? $this->config->get('noticeuplivesearch_image_width') : 54;
+    			$image_height = ( $this->config->get('noticeuplivesearch_image_width') ) ? $this->config->get('noticeuplivesearch_image_width') : 50;
+
+    			$products = $this->model_catalog_product->getProducts($data);
+
+    			$i = 0;
+    			$results = array();
+
+    			//Если разрешено искать по категориям
+    			if($this->config->get('noticeuplivesearch_findCategory')){
+    				$categories = $this->getCategories($data);
+    				foreach($categories as $category){
+    					$results[$i]["name"] = $category['name'];
+    					$results[$i]['href'] = $this->url->link('product/category', 'path=' . $category['category_id']);;
+    					$i++;
+    				}
+    			}
+
+    			foreach ($products as $product) {
+
+    				$results[$i]["name"] = $product["name"];
+
+    				if ($model) {
+    					$results["$i"]["model"] = $product["model"];
+    				}
+
+    				$results[$i]["image"] = $product['image'];
+    				if ($product['image'] && $images==1) {
+    					$results[$i]["image"] = $this->model_tool_image->resize(
+    						$product['image'],
+    						$image_width,
+    						$image_height
+    					);
+    				}
+
+    				if($manufacturer){
+    					$results[$i]["manufacturer"] = $product['manufacturer'];
+    				}
+
+    				if ($prices) {
+    					$results[$i]["price"] = $this->currency->format( $this->tax->calculate( $product['price'], $product['tax_class_id'], $this->config->get('config_tax') ), $this->session->data['currency'] );
+    					if ($product['special']) {
+    						$results[$i]["oldprice"] = $this->currency->format( $this->tax->calculate( $product['price'], $product['tax_class_id'], $this->config->get('config_tax') ), $this->session->data['currency'] );
+    						$results[$i]["price"] = $this->currency->format( $this->tax->calculate( $product['special'], $product['tax_class_id'], $this->config->get('config_tax') ), $this->session->data['currency'] );
+    					}
+    				}
+
+    				$results[$i]["href"] = $this->url->link('product/product', 'product_id=' . $product['product_id']);
+    				$i++;
+    			}
+    			return $results;
+    		}
+
+    		function getCategories($data = array()) {
+
+    			$sql  = "SELECT * FROM " . DB_PREFIX . "category c";
+    			$sql .= " LEFT JOIN " . DB_PREFIX . "category_description cd ON (c.category_id = cd.category_id)";
+    			$sql .= " LEFT JOIN " . DB_PREFIX . "category_to_store c2s ON (c.category_id = c2s.category_id)";
+    			$sql .= " WHERE cd.language_id = '" . (int)$this->config->get('config_language_id') . "' ";
+
+    			if (!empty($data['filter_name'])){
+    				$implode = array();
+
+    				$words = explode(' ', trim(preg_replace('/\s+/', ' ', $data['filter_name'])));
+
+    				foreach ($words as $word) {
+    					$implode[] = " AND cd.name LIKE '%" . $this->db->escape($word) . "%' ";
+    				}
+
+    				if ($implode) {
+    					$sql .= " " . implode(" AND ", $implode) . "";
+    				}
+
+    				if (!empty($data['filter_description'])) {
+    					$sql .= " OR cd.description LIKE '%" . $this->db->escape($data['filter_name']) . "%'";
+    				}
+    			}
+
+    			$sql .= " AND c2s.store_id = '" . (int)$this->config->get('config_store_id') . "'";
+    			$sql .= " AND c.status = '1'";
+    			$sql .= " ORDER BY c.sort_order, LCASE(cd.name)";
+
+    			$query = $this->db->query($sql);
+
+    			return $query->rows;
+    		}
+
+    		function livesearch() {
+
+    			$this->load->model('setting/setting');
+    			$limit = ( $this->config->get('noticeuplivesearch_maxShownResults') ) ? $this->config->get('noticeuplivesearch_maxShownResults') : 20;
+    			$search = $this->request->get['keyword'];
+
+    			//Разрешить искать по описаний
+    			$filter_description = '';
+    			if($this->config->get('noticeuplivesearch_findDescription')){
+    				$filter_description = $search;
+    			}
+
+    			$data = array(
+    				'filter_name' => $search,
+    				'filter_description' => $filter_description,
+    				'sort' => 'p.quantity',
+    				'order'=> 'DESC',
+    				'start'=> 0,
+    				'limit'=> $limit
+    			);
+
+    			$results = $this->getProducts($data);
+
+    			echo json_encode($results);
+    		}
+		]]></add>
+		</operation>
+	</file>
+</modification>

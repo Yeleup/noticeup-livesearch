@@ -1,0 +1,88 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <button type="submit" form="form-information" data-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary"><i class="fa fa-save"></i></button>
+        <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default"><i class="fa fa-reply"></i></a></div>
+      <h1>{{ heading_title }}</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+        <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    {% if success %}
+    <div class="alert alert-success"><i class="fa fa-exclamation-circle"></i> {{ success }}
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    {% endif %}
+    {% if error_warning %}
+    <div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+    {% endif %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_edit }}</h3>
+      </div>
+      <div class="panel-body">
+        <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-information" class="form-horizontal">
+          <div class="form-group">
+           <label class="col-sm-2 control-label" for="minLength">{{ min_length }}</label>
+           <div class="col-sm-10">
+             <input value="{{ noticeuplivesearch_minLength }}" type="number" name="noticeuplivesearch_minLength" class="form-control" id="minLength">
+           </div>
+          </div>
+          <div class="form-group">
+           <label class="col-sm-2 control-label" for="maxShownResults">{{ max_shown_results }}</label>
+           <div class="col-sm-10">
+             <input value="{{ noticeuplivesearch_maxShownResults }}" type="number" name="noticeuplivesearch_maxShownResults" class="form-control" id="maxShownResults">
+           </div>
+          </div>
+
+          <div class="form-group">
+           <label class="col-sm-2 control-label" for="visibleProperties">{{ visible_properties }}<span data-toggle="tooltip" title="{{ tooltip_properties }}"></span></label>
+           <div class="col-sm-10">
+             <input type='text' data-selection-required='true' value='{{ noticeuplivesearch_visibleProperties }}' data-min-length='0' data-value-property='value' name="noticeuplivesearch_visibleProperties" class='flexdatalist' data-min-length='1' multiple='multiple' list='properties'>
+              <datalist id="properties">
+                <option value="image">{{ image }}</option>
+                <option value="name">{{ name }}</option>
+                <option value="price">{{ price }}</option>
+                <option value="oldprice">{{ old_price }}</option>
+                <option value="model">{{ model }}</option>
+                <option value="manufacturer">{{ manufacturer }}</option>
+              </datalist>
+           </div>
+          </div>
+
+          <div class="form-group">
+            <label class="col-sm-2 control-label" for="ImageWidth">{{ image_width }}</label>
+           <div class="col-sm-1">
+             <input value="{{ noticeuplivesearch_image_width }}" type="number" name="noticeuplivesearch_image_width" class="form-control" id="imageWidth">
+           </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-2 control-label" for="imageHeight">{{ image_height }}</label>
+           <div class="col-sm-1">
+             <input value="{{ noticeuplivesearch_image_height }}" type="number" name="noticeuplivesearch_image_height" class="form-control" id="imageHeight">
+           </div>
+          </div>
+
+          <div class="form-group">
+           <label class="col-sm-2 control-label" for="groupBy">{{ group_by_manufacturer }}</label>
+           <div class="col-sm-10">
+             <input value="manufacturer" {% if noticeuplivesearch_groupBy %} checked {% endif %} type="checkbox" name="noticeuplivesearch_groupBy" class="form-control" id="groupBy">
+           </div>
+          </div>
+
+        </form>
+
+        <p class="col-sm-5 col-sm-offset-2 text-info"> {{ style_info }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{{ footer }}
