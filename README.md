@@ -16,14 +16,12 @@
 
 Модуль совместим со всеми темами по-умолчанию (при возникновении трудностей с установкой напишите нам и мы обязательно поможем)
 
-```testing
 * Opencart 3.0.2.0
 * Opencart 2.3.0.2
 * Opencart 2.2.0.0
 * Opencart 2.1.0.1
 * Opencart 2.0.1.0
 * Ocstore 2.3.0.2
-```
 
 ## License
 [Noticeup Livesearch](https://opencartforum.com/files/file/4901-noticeup-livesearchzhivoy-poisk/)
